@@ -108,7 +108,7 @@ public:
 	uint32_t getDescriptorCount(MVKDescriptorSet* descSet = nullptr) const;
 
 	/** Returns the descriptor type of this layout. */
-	inline VkDescriptorType getDescriptorType() { return _info.descriptorType; }
+	inline VkDescriptorType getDescriptorType() const { return _info.descriptorType; }
 
 	/** Returns whether this binding uses immutable samplers. */
 	bool usesImmutableSamplers() { return !_immutableSamplers.empty(); }

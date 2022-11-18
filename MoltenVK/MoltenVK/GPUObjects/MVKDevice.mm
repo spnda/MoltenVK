@@ -401,6 +401,12 @@ void MVKPhysicalDevice::getFeatures(VkPhysicalDeviceFeatures2* features) {
 				shaderIntFuncsFeatures->shaderIntegerFunctions2 = true;
 				break;
 			}
+            case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT: {
+                auto* descriptorBufferFeatures = (VkPhysicalDeviceDescriptorBufferFeaturesEXT*)next;
+                descriptorBufferFeatures->descriptorBuffer = true;
+                descriptorBufferFeatures->descriptorBufferImageLayoutIgnored = true;
+                break;
+            }
 			default:
 				break;
 		}
@@ -689,6 +695,36 @@ void MVKPhysicalDevice::getProperties(VkPhysicalDeviceProperties2* properties) {
 				robustness2Props->robustUniformBufferAccessSizeAlignment = 1;
 				break;
 			}
+            case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT: {
+                auto* descriptorBufferProperties = (VkPhysicalDeviceDescriptorBufferPropertiesEXT*)next;
+                descriptorBufferProperties->samplerDescriptorSize = sizeof(MTLResourceID);
+                descriptorBufferProperties->combinedImageSamplerDescriptorSize = sizeof(MTLResourceID) * 2;
+                descriptorBufferProperties->sampledImageDescriptorSize = sizeof(MTLResourceID);
+                descriptorBufferProperties->storageImageDescriptorSize = sizeof(MTLResourceID);
+                descriptorBufferProperties->uniformBufferDescriptorSize = sizeof(void*);
+                descriptorBufferProperties->storageBufferDescriptorSize = sizeof(void*);
+                descriptorBufferProperties->maxDescriptorBufferBindings = 8;
+                descriptorBufferProperties->maxResourceDescriptorBufferBindings = 8;
+                descriptorBufferProperties->maxSamplerDescriptorBufferBindings = 8;
+                
+                // "Minimum constant buffer offset alignment" is 4 bytes for all Apple GPUs. It's
+                // 32 bytes for all Mac2 GPUs, and apparently 256 bytes for everything else (incl. Intel).
+                // However, on Apple GPUs, we need to align to the largest data type. With descriptors,
+                // this can currently only ever be uint64_t (buffer pointers, texture handles, and
+                // sampler handles are all 64-bit). We therefore align to 8 bytes.
+#ifdef MVK_MACOS
+                if (_properties.vendorID == kAppleVendorId) {
+                    descriptorBufferProperties->descriptorBufferOffsetAlignment = 8;
+                } else if (supportsMTLGPUFamily(Mac2)) {
+                    descriptorBufferProperties->descriptorBufferOffsetAlignment = 32;
+                } else {
+                    descriptorBufferProperties->descriptorBufferOffsetAlignment = 256;
+                }
+#elif MVK_IOS_OR_TVOS
+                descriptorBufferProperties->descriptorBufferOffsetAlignment = 8;
+#endif
+                break;
+            }
 			default:
 				break;
 		}
@@ -3077,6 +3113,10 @@ void MVKPhysicalDevice::initExtensions() {
 		pWritableExtns->vk_KHR_fragment_shader_barycentric.enabled = false;
 		pWritableExtns->vk_NV_fragment_shader_barycentric.enabled = false;
 	}
+    if (_metalFeatures.argumentBuffersTier < MTLArgumentBuffersTier2) {
+        pWritableExtns->vk_EXT_descriptor_indexing.enabled = false;
+        pWritableExtns->vk_EXT_descriptor_buffer.enabled = false;
+    }
     
     // The relevant functions are not available if not built with Xcode 14.
 #if MVK_XCODE_14
@@ -4175,6 +4215,49 @@ uint32_t MVKDevice::getViewCountInMetalPass(uint32_t viewMask, uint32_t passIdx)
 	return viewCount;
 }
 
+void MVKDevice::getDescriptor(const VkDescriptorGetInfoEXT *pDescriptorInfo, size_t dataSize, void *pDescriptor) const {
+    switch (pDescriptorInfo->type) {
+        case VK_DESCRIPTOR_TYPE_SAMPLER: {
+            auto* sampler = (MVKSampler*)pDescriptorInfo->data.pSampler;
+            (*(MTLResourceID*)pDescriptor) = sampler->getMTLSamplerState().gpuResourceID;
+            break;
+        }
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: {
+            auto* imageView = (MVKImageView*)pDescriptorInfo->data.pStorageImage;
+            (*(MTLResourceID*)pDescriptor) = imageView->getMTLTexture().gpuResourceID;
+            break;
+        }
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE: {
+            auto* imageView = (MVKImageView*)pDescriptorInfo->data.pSampledImage;
+            (*(MTLResourceID*)pDescriptor) = imageView->getMTLTexture().gpuResourceID;
+            break;
+        }
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: {
+            auto* sampler = (MVKSampler*)pDescriptorInfo->data.pCombinedImageSampler->sampler;
+            auto* imageView = (MVKImageView*)pDescriptorInfo->data.pCombinedImageSampler->imageView;
+            (*(MTLResourceID*)pDescriptor) = sampler->getMTLSamplerState().gpuResourceID;
+            (*((MTLResourceID*)pDescriptor + 1)) = imageView->getMTLTexture().gpuResourceID;
+            break;
+        }
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+            (*(uint64_t*)pDescriptor) = pDescriptorInfo->data.pUniformBuffer->address;
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            (*(uint64_t*)pDescriptor) = pDescriptorInfo->data.pStorageBuffer->address;
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+            // TODO
+            break;
+        case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+            // TODO
+            break;
+        default: {
+            break;
+        }
+    }
+}
+
 
 #pragma mark Metal
 
@@ -4412,13 +4495,18 @@ MVKDevice::MVKDevice(MVKPhysicalDevice* physicalDevice, const VkDeviceCreateInfo
 	initQueues(pCreateInfo);
 	reservePrivateData(pCreateInfo);
 
-	// After enableExtensions && enableFeatures
-	// Use Metal arg buffs if available, and either config wants them always,
-	// or config wants them with descriptor indexing and descriptor indexing has been enabled.
-	_isUsingMetalArgumentBuffers = (_physicalDevice->supportsMetalArgumentBuffers() &&
-									(mvkConfig().useMetalArgumentBuffers == MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS_ALWAYS ||
-									 (mvkConfig().useMetalArgumentBuffers == MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS_DESCRIPTOR_INDEXING &&
-									  (_enabledVulkan12FeaturesNoExt.descriptorIndexing || _enabledExtensions.vk_EXT_descriptor_indexing.enabled))));
+    // If EXT_descriptor_indexing, EXT_descriptor_buffer, or Vulkan 1.2 (moves descriptor indexing
+    // into core) is supported by the application, we unconditionally use Metal argument buffers, as
+    // those three things would not be available if the device does not support tier 2.
+    if (_enabledExtensions.vk_EXT_descriptor_indexing.enabled ||
+        _enabledVulkan12FeaturesNoExt.descriptorIndexing ||
+        _enabledExtensions.vk_EXT_descriptor_buffer.enabled) {
+        _isUsingMetalArgumentBuffers = true;
+    } else if (_physicalDevice->supportsMetalArgumentBuffers() && mvkConfig().useMetalArgumentBuffers == MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS_ALWAYS) {
+        _isUsingMetalArgumentBuffers = true;
+    } else {
+        _isUsingMetalArgumentBuffers = false;
+    }
 
 	_commandResourceFactory = new MVKCommandResourceFactory(this);
 

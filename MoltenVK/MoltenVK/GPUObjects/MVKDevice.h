@@ -704,6 +704,7 @@ public:
 	/** Log all performance statistics. */
 	void logPerformanceSummary();
 
+    void getDescriptor(const VkDescriptorGetInfoEXT* pDescriptorInfo, size_t dataSize, void* pDescriptor) const;
 
 #pragma mark Metal
 

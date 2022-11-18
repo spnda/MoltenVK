@@ -22,6 +22,7 @@
 #include "MVKPipeline.h"
 #include "MVKInstance.h"
 #include "MVKOSExtensions.h"
+#include <Metal/Metal.h>
 
 
 #pragma mark -
@@ -36,7 +37,8 @@ void MVKDescriptorSetLayout::bindDescriptorSet(MVKCommandEncoder* cmdEncoder,
 											   MVKArrayRef<uint32_t> dynamicOffsets,
 											   uint32_t& dynamicOffsetIndex) {
 	if (!cmdEncoder) { clearConfigurationResult(); }
-	if (_isPushDescriptorLayout ) { return; }
+	if (_isPushDescriptorLayout) { return; }
+    if (_isDescriptorBufferLayout) { return; }
 
 	if (cmdEncoder) { cmdEncoder->bindDescriptorSet(pipelineBindPoint, descSetIndex,
 													descSet, dslMTLRezIdxOffsets,
@@ -208,6 +210,74 @@ bool MVKDescriptorSetLayout::populateBindingUse(MVKBitArray& bindingUse,
 	return descSetIsUsed;
 }
 
+void MVKDescriptorSetLayout::getBindingByteOffset(uint32_t binding, VkDeviceSize* size) const {
+    if (!_isDescriptorBufferLayout)
+        return;
+    
+    for (uint32_t i = 0; i < binding; ++i) {
+        auto& dslBinding = _bindings[i];
+        switch (dslBinding.getDescriptorType()) {
+            case VK_DESCRIPTOR_TYPE_SAMPLER:
+            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+                *size = sizeof(MTLResourceID);
+                break;
+            case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+                *size = sizeof(MTLResourceID) * 2;
+                break;
+            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+                *size = sizeof(void*);
+                break;
+            case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+                // TODO
+                break;
+            case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+                // TODO
+                break;
+            default: {
+                break;
+            }
+        }
+    }
+}
+
+void MVKDescriptorSetLayout::getTotalByteSize(VkDeviceSize *size) const {
+    if (!_isDescriptorBufferLayout)
+        return;
+    
+    auto bindCount = static_cast<uint32_t>(_bindings.size());
+    *size = 0;
+    for (uint32_t i = 0; i < bindCount; ++i) {
+        auto& dslBinding = _bindings[i];
+        switch (dslBinding.getDescriptorType()) {
+            case VK_DESCRIPTOR_TYPE_SAMPLER:
+            case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+                *size += sizeof(MTLResourceID);
+                break;
+            case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+                *size += sizeof(MTLResourceID) * 2;
+                break;
+            case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+                *size += sizeof(void*);
+                break;
+            case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+                // TODO
+                break;
+            case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+                // TODO
+                break;
+            default: {
+                break;
+            }
+        }
+    }
+}
+
 MVKDescriptorSetLayout::MVKDescriptorSetLayout(MVKDevice* device,
                                                const VkDescriptorSetLayoutCreateInfo* pCreateInfo) : MVKVulkanAPIDeviceObject(device) {
 
@@ -232,6 +302,8 @@ MVKDescriptorSetLayout::MVKDescriptorSetLayout(MVKDevice* device,
 
 	_descriptorCount = 0;
 	_isPushDescriptorLayout = mvkIsAnyFlagEnabled(pCreateInfo->flags, VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR);
+    _isDescriptorBufferLayout = mvkIsAnyFlagEnabled(pCreateInfo->flags,
+        VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
 
 	_bindings.reserve(bindCnt);
     for (uint32_t bindIdx = 0; bindIdx < bindCnt; bindIdx++) {

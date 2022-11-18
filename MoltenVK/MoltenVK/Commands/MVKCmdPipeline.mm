@@ -555,3 +555,53 @@ void MVKCmdWaitEvents<N>::encode(MVKCommandEncoder* cmdEncoder) {
 template class MVKCmdWaitEvents<1>;
 template class MVKCmdWaitEvents<8>;
 
+
+#pragma mark -
+#pragma mark MVKCmdBindDescriptorBuffers
+
+template <size_t N>
+VkResult MVKCmdBindDescriptorBuffers<N>::setContent(MVKCommandBuffer *cmdBuff, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT *pBindingInfos) {
+    
+    for (uint32_t i = 0; i < bufferCount; ++i) {
+        _boundBuffers.emplace_back(pBindingInfos[i].address);
+    }
+    
+    return VK_SUCCESS;
+}
+
+template <size_t N>
+void MVKCmdBindDescriptorBuffers<N>::encode(MVKCommandEncoder *cmdEncoder) {
+    
+}
+
+template class MVKCmdBindDescriptorBuffers<1>;
+template class MVKCmdBindDescriptorBuffers<4>;
+template class MVKCmdBindDescriptorBuffers<8>;
+
+
+#pragma mark -
+#pragma mark MVKCmdBindDescriptorBufferOffsets
+
+template <size_t N>
+VkResult MVKCmdSetDescriptorBufferOffsets<N>::setContent(MVKCommandBuffer *cmdBuff, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets) {
+    _pipelineBindPoint = pipelineBindPoint;
+    _pipelineLayout = (MVKPipelineLayout*)layout;
+    _firstSet = firstSet;
+    _setCount = setCount;
+    
+    for (uint32_t i = 0; i < (setCount - firstSet); ++i) {
+        _offsets.emplace_back(BufferOffsets {
+            pBufferIndices[i], pOffsets[i]
+        });
+    }
+    return VK_SUCCESS;
+}
+
+template <size_t N>
+void MVKCmdSetDescriptorBufferOffsets<N>::encode(MVKCommandEncoder* cmdEncoder) {
+    
+}
+
+template class MVKCmdSetDescriptorBufferOffsets<1>;
+template class MVKCmdSetDescriptorBufferOffsets<4>;
+template class MVKCmdSetDescriptorBufferOffsets<8>;

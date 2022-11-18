@@ -111,6 +111,10 @@ public:
 
 	/** Returns the binding at the index in a descriptor set layout. */
 	MVKDescriptorSetLayoutBinding* getBindingAt(uint32_t index) { return &_bindings[index]; }
+    
+    void getBindingByteOffset(uint32_t binding, VkDeviceSize* size) const;
+    
+    void getTotalByteSize(VkDeviceSize* size) const;
 
 	/** Returns true if this layout is for push descriptors only. */
 	bool isPushDescriptorLayout() const { return _isPushDescriptorLayout; }
@@ -142,6 +146,7 @@ protected:
 	MVKShaderResourceBinding _mtlResourceCounts;
 	uint32_t _descriptorCount;
 	bool _isPushDescriptorLayout;
+    bool _isDescriptorBufferLayout;
 };
 
 

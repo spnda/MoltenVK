@@ -2981,6 +2981,119 @@ MVK_PUBLIC_VULKAN_CORE_ALIAS(vkGetBufferDeviceAddress, EXT);
 
 
 #pragma mark -
+#pragma mark VK_EXT_descriptor_buffer extension
+
+MVK_PUBLIC_VULKAN_SYMBOL void vkCmdBindDescriptorBufferEmbeddedSamplersEXT(
+    VkCommandBuffer                             commandBuffer,
+    VkPipelineBindPoint                         pipelineBindPoint,
+    VkPipelineLayout                            layout,
+    uint32_t                                    set) {
+    
+    MVKTraceVulkanCallStart();
+    MVKTraceVulkanCallEnd();
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL void vkCmdBindDescriptorBuffersEXT(
+    VkCommandBuffer                             commandBuffer,
+    uint32_t                                    bufferCount,
+    const VkDescriptorBufferBindingInfoEXT*     pBindingInfos) {
+    
+    MVKTraceVulkanCallStart();
+    MVKAddCmdFrom2Thresholds(BindDescriptorBuffers, bufferCount, 1, 4, commandBuffer, bufferCount, pBindingInfos);
+    MVKTraceVulkanCallEnd();
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL void vkCmdSetDescriptorBufferOffsetsEXT(
+    VkCommandBuffer                             commandBuffer,
+    VkPipelineBindPoint                         pipelineBindPoint,
+    VkPipelineLayout                            layout,
+    uint32_t                                    firstSet,
+    uint32_t                                    setCount,
+    const uint32_t*                             pBufferIndices,
+    const VkDeviceSize*                         pOffsets) {
+    
+    MVKTraceVulkanCallStart();
+    MVKAddCmdFrom2Thresholds(SetDescriptorBufferOffsets, setCount - firstSet, 1, 4, commandBuffer, pipelineBindPoint, layout, firstSet, setCount, pBufferIndices, pOffsets);
+    MVKTraceVulkanCallEnd();
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL VkResult vkGetBufferOpaqueCaptureDescriptorDataEXT(
+    VkDevice                                    device,
+    const VkBufferCaptureDescriptorDataInfoEXT* pInfo,
+    void*                                       pData) {
+    
+    MVKTraceVulkanCallStart();
+    MVKTraceVulkanCallEnd();
+    return VK_ERROR_FEATURE_NOT_PRESENT;
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL void vkGetDescriptorEXT(
+    VkDevice                                    device,
+    const VkDescriptorGetInfoEXT*               pDescriptorInfo,
+    size_t                                      dataSize,
+    void*                                       pDescriptor) {
+    
+    MVKTraceVulkanCallStart();
+    MVKDevice* mvkDev = MVKDevice::getMVKDevice(device);
+    mvkDev->getDescriptor(pDescriptorInfo, dataSize, pDescriptor);
+    MVKTraceVulkanCallEnd();
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL void vkGetDescriptorSetLayoutBindingOffsetEXT(
+    VkDevice                                    device,
+    VkDescriptorSetLayout                       layout,
+    uint32_t                                    binding,
+    VkDeviceSize*                               pOffset) {
+    
+    MVKTraceVulkanCallStart();
+    auto* mvkLayout = (MVKDescriptorSetLayout*)layout;
+    mvkLayout->getBindingByteOffset(binding, pOffset);
+    MVKTraceVulkanCallEnd();
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL void vkGetDescriptorSetLayoutSizeEXT(
+    VkDevice                                    device,
+    VkDescriptorSetLayout                       layout,
+    VkDeviceSize*                               pLayoutSizeInBytes) {
+    
+    MVKTraceVulkanCallStart();
+    auto* mvkLayout = (MVKDescriptorSetLayout*)layout;
+    mvkLayout->getTotalByteSize(pLayoutSizeInBytes);
+    MVKTraceVulkanCallEnd();
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL VkResult vkGetImageOpaqueCaptureDescriptorDataEXT(
+    VkDevice                                    device,
+    const VkImageCaptureDescriptorDataInfoEXT*  pInfo,
+    void*                                       pData) {
+    
+    MVKTraceVulkanCallStart();
+    MVKTraceVulkanCallEnd();
+    return VK_ERROR_FEATURE_NOT_PRESENT;
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL VkResult vkGetImageViewOpaqueCaptureDescriptorDataEXT(
+    VkDevice                                    device,
+    const VkImageViewCaptureDescriptorDataInfoEXT* pInfo,
+    void*                                       pData) {
+    
+    MVKTraceVulkanCallStart();
+    MVKTraceVulkanCallEnd();
+    return VK_ERROR_FEATURE_NOT_PRESENT;
+}
+
+MVK_PUBLIC_VULKAN_SYMBOL VkResult vkGetSamplerOpaqueCaptureDescriptorDataEXT(
+    VkDevice                                    device,
+    const VkSamplerCaptureDescriptorDataInfoEXT* pInfo,
+    void*                                       pData) {
+    
+    MVKTraceVulkanCallStart();
+    MVKTraceVulkanCallEnd();
+    return VK_ERROR_FEATURE_NOT_PRESENT;
+}
+
+
+#pragma mark -
 #pragma mark VK_EXT_debug_report extension
 
 MVK_PUBLIC_VULKAN_SYMBOL VkResult vkCreateDebugReportCallbackEXT(

@@ -95,6 +95,7 @@ MVK_EXTENSION(EXT_buffer_device_address,           EXT_BUFFER_DEVICE_ADDRESS,   
 MVK_EXTENSION(EXT_debug_marker,                    EXT_DEBUG_MARKER,                     DEVICE,   10.11,  8.0)
 MVK_EXTENSION(EXT_debug_report,                    EXT_DEBUG_REPORT,                     INSTANCE, 10.11,  8.0)
 MVK_EXTENSION(EXT_debug_utils,                     EXT_DEBUG_UTILS,                      INSTANCE, 10.11,  8.0)
+MVK_EXTENSION(EXT_descriptor_buffer,               EXT_DESCRIPTOR_BUFFER,                DEVICE,    13.0, 16.0)
 MVK_EXTENSION(EXT_descriptor_indexing,             EXT_DESCRIPTOR_INDEXING,              DEVICE,   10.11,  8.0)
 MVK_EXTENSION(EXT_fragment_shader_interlock,       EXT_FRAGMENT_SHADER_INTERLOCK,        DEVICE,   10.13, 11.0)
 MVK_EXTENSION(EXT_hdr_metadata,                    EXT_HDR_METADATA,                     DEVICE,   10.15, MVK_NA)

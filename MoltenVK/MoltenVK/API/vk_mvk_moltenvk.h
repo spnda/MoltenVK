@@ -98,9 +98,9 @@ typedef VkFlags MVKConfigAdvertiseExtensions;
 
 /** Identifies the use of Metal Argument Buffers. */
 typedef enum MVKUseMetalArgumentBuffers {
-	MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS_NEVER               = 0,	/**< Don't use Metal Argument Buffers. */
+	MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS_IF_REQUIRED         = 0,	/**< Only use Metal Argument Buffers if a extension is enabled that requires them.  */
 	MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS_ALWAYS              = 1,	/**< Use Metal Argument Buffers for all pipelines. */
-	MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS_DESCRIPTOR_INDEXING = 2,	/**< Use Metal Argument Buffers only if VK_EXT_descriptor_indexing extension is enabled. */
+	MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS_DESCRIPTOR_INDEXING = 2,	/**< Deprecated, same behaviour as default. Use Metal Argument Buffers only if VK_EXT_descriptor_indexing extension is enabled. */
 	MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS_MAX_ENUM            = 0x7FFFFFFF
 } MVKUseMetalArgumentBuffers;
 

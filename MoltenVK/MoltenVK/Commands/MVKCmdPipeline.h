@@ -363,3 +363,57 @@ protected:
 // Concrete template class implementations.
 typedef MVKCmdWaitEvents<1> MVKCmdWaitEvents1;
 typedef MVKCmdWaitEvents<8> MVKCmdWaitEventsMulti;
+
+
+#pragma mark -
+#pragma mark MVKCmdBindDescriptorBuffers
+
+template <size_t N>
+class MVKCmdBindDescriptorBuffers : public MVKCommand {
+public:
+    VkResult setContent(MVKCommandBuffer* cmdBuff,
+                    uint32_t bufferCount,
+                    const VkDescriptorBufferBindingInfoEXT* pBindingInfos);
+    
+    void encode(MVKCommandEncoder* cmdEncoder) override;
+
+protected:
+    MVKCommandTypePool<MVKCommand>* getTypePool(MVKCommandPool* cmdPool) override;
+    
+    MVKSmallVector<VkDeviceAddress, N> _boundBuffers;
+};
+
+// Concrete template class implementations.
+typedef MVKCmdBindDescriptorBuffers<1> MVKCmdBindDescriptorBuffers1;
+typedef MVKCmdBindDescriptorBuffers<4> MVKCmdBindDescriptorBuffers4;
+typedef MVKCmdBindDescriptorBuffers<8> MVKCmdBindDescriptorBuffersMulti;
+
+
+#pragma mark -
+#pragma mark MVKCmdSetDescriptorBufferOffsets
+
+template <size_t N>
+class MVKCmdSetDescriptorBufferOffsets : public MVKCommand {
+public:
+    struct BufferOffsets {
+        uint32_t bufferIndex;
+        VkDeviceSize offset;
+    };
+    
+    VkResult setContent(MVKCommandBuffer *cmdBuff, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets);
+    
+    void encode(MVKCommandEncoder* cmdEncoder) override;
+    
+protected:
+    MVKCommandTypePool<MVKCommand>* getTypePool(MVKCommandPool* cmdPool) override;
+    
+    uint32_t _firstSet, _setCount;
+    MVKSmallVector<BufferOffsets, N> _offsets;
+    VkPipelineBindPoint _pipelineBindPoint;
+    MVKPipelineLayout* _pipelineLayout;
+};
+
+// Concrete template class implementations.
+typedef MVKCmdSetDescriptorBufferOffsets<1> MVKCmdSetDescriptorBufferOffsets1;
+typedef MVKCmdSetDescriptorBufferOffsets<4> MVKCmdSetDescriptorBufferOffsets4;
+typedef MVKCmdSetDescriptorBufferOffsets<8> MVKCmdSetDescriptorBufferOffsetsMulti;
