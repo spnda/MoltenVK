@@ -183,6 +183,7 @@ public:
 
 	/** Returns the capabilities of the specified surface. */
 	VkResult getSurfaceCapabilities(MVKSurface* surface, VkSurfaceCapabilitiesKHR* pSurfaceCapabilities);
+    VkResult getSurfaceCapabilities(VkPhysicalDeviceSurfaceInfo2KHR *surface, VkSurfaceCapabilities2KHR *pSurfaceCapabilities);
 
 	/**
 	 * Returns the pixel formats supported by the surface.
@@ -442,6 +443,7 @@ protected:
 	uint32_t _lazilyAllocatedMemoryTypes;
 	VkExternalMemoryProperties _mtlBufferExternalMemoryProperties;
 	VkExternalMemoryProperties _mtlTextureExternalMemoryProperties;
+    VkPresentModeKHR supportedPresentModes[2];
 };
 
 

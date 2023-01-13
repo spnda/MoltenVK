@@ -401,6 +401,11 @@ void MVKPhysicalDevice::getFeatures(VkPhysicalDeviceFeatures2* features) {
 				shaderIntFuncsFeatures->shaderIntegerFunctions2 = true;
 				break;
 			}
+            case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT: {
+                auto* swapchainMaintenance1Features = (VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT*)next;
+                swapchainMaintenance1Features->swapchainMaintenance1 = true;
+                break;
+            }
 			default:
 				break;
 		}
@@ -1104,6 +1109,35 @@ VkResult MVKPhysicalDevice::getSurfaceCapabilities(MVKSurface* surface,
 	return VK_SUCCESS;
 }
 
+VkResult MVKPhysicalDevice::getSurfaceCapabilities(VkPhysicalDeviceSurfaceInfo2KHR *surface, VkSurfaceCapabilities2KHR *pSurfaceCapabilities) {
+    for (auto* next = (VkBaseOutStructure*)pSurfaceCapabilities->pNext; next; next = next->pNext) {
+        switch (next->sType) {
+            case VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT: {
+                auto* pPresentModeCompat = (VkSurfacePresentModeCompatibilityEXT*)next;
+                // iOS always VSyncs.
+#ifdef MVK_MACOS
+                pPresentModeCompat->presentModeCount = _metalFeatures.presentModeImmediate ? 2 : 1;
+#endif
+                pPresentModeCompat->presentModeCount = 1;
+                pPresentModeCompat->pPresentModes = supportedPresentModes;
+                break;
+            }
+            case VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT: {
+                auto* pScalingCapabilities = (VkSurfacePresentScalingCapabilitiesEXT*)next;
+                pScalingCapabilities->supportedPresentScaling = 0;
+                pScalingCapabilities->supportedPresentGravityX = 0;
+                pScalingCapabilities->supportedPresentGravityY = 0;
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    }
+
+    return getSurfaceCapabilities((MVKSurface*)surface->surface, &pSurfaceCapabilities->surfaceCapabilities);
+}
+
 VkResult MVKPhysicalDevice::getSurfaceFormats(MVKSurface* surface,
 											  uint32_t* pCount,
 											  VkSurfaceFormatKHR* pSurfaceFormats) {
@@ -1446,6 +1480,13 @@ MVKPhysicalDevice::MVKPhysicalDevice(MVKInstance* mvkInstance, id<MTLDevice> mtl
 	initCounterSets();
 	initVkSemaphoreStyle();
 	logGPUInfo();
+    
+    supportedPresentModes[0] = VK_PRESENT_MODE_FIFO_KHR;
+    if (_metalFeatures.presentModeImmediate) {
+        supportedPresentModes[1] = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    } else {
+        supportedPresentModes[1] = VK_PRESENT_MODE_MAX_ENUM_KHR;
+    }
 }
 
 // Initializes the physical device properties (except limits).

@@ -2945,8 +2945,7 @@ MVK_PUBLIC_VULKAN_SYMBOL VkResult vkGetPhysicalDeviceSurfaceCapabilities2KHR(
 
 	MVKTraceVulkanCallStart();
 	MVKPhysicalDevice* mvkPD = MVKPhysicalDevice::getMVKPhysicalDevice(physicalDevice);
-	MVKSurface* mvkSrfc = (MVKSurface*)pSurfaceInfo->surface;
-	VkResult rslt = mvkPD->getSurfaceCapabilities(mvkSrfc, &pSurfaceCapabilities->surfaceCapabilities);
+	VkResult rslt = mvkPD->getSurfaceCapabilities(pSurfaceInfo, pSurfaceCapabilities);
 	MVKTraceVulkanCallEnd();
 	return rslt;
 }
@@ -3324,6 +3323,18 @@ void vkCmdSetSampleLocationsEXT(
 	MVKTraceVulkanCallStart();
 	MVKAddCmd(SetSampleLocations, commandBuffer, pSampleLocationsInfo);
 	MVKTraceVulkanCallEnd();
+}
+
+#pragma mark -
+#pragma mark VK_EXT_swapchain_maintenance1 extension
+
+MVK_PUBLIC_VULKAN_SYMBOL VkResult vkReleaseSwapchainImagesEXT(
+    VkDevice                                    device,
+    const VkReleaseSwapchainImagesInfoEXT*      pReleaseInfo) {
+    
+    MVKTraceVulkanCallStart();
+    MVKTraceVulkanCallEnd();
+    return VK_SUCCESS;
 }
 
 #pragma mark -
